@@ -78,6 +78,9 @@ from chainlit.user import PersistedUser, User
 from chainlit.utils import utc_now
 
 from ._utils import is_path_inside
+from dotenv import load_dotenv
+
+load_dotenv()
 
 mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
@@ -503,10 +506,17 @@ async def _authenticate_user(
     """Authenticate a user and return the response."""
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="credentialssignin",
-        )
+        if not os.getenv('LOGIN_FAILED_REDIRECT_URI'):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="credentialssignin",
+            )
+        else:
+            redirect_url = os.environ.get("LOGIN_FAILED_REDIRECT_URI")
+            return RedirectResponse(
+                url=redirect_url,
+                status_code=status.HTTP_302_FOUND,
+            )
 
     # If a data layer is defined, attempt to persist user.
     if data_layer := get_data_layer():
